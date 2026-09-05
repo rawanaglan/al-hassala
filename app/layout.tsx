@@ -12,6 +12,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+
 export const metadata: Metadata = {
   title: "الحصالة | Al-Hassala",
   description: "أفكار صغيرة.. تصنع حياة كبيرة",
