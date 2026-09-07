@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
 type Props = {
   categoryId: string;
   categoryName: string;
   bundlePrice: number;
-  bundleId?: string | null; // Changed from productId to bundleId
+  bundleId?: string | null;
 };
 
 export default function CategoryBundleModal({
@@ -31,7 +32,6 @@ export default function CategoryBundleModal({
     setMounted(true);
   }, []);
 
-  // Fetch the category bundle ID from the new category_bundles table if not passed via props
   useEffect(() => {
     async function fetchCategoryBundle() {
       if (bundleId) {
@@ -69,7 +69,7 @@ export default function CategoryBundleModal({
         const { data: reqData } = await supabase
           .from("access_requests")
           .select("status")
-          .eq("product_id", resolvedBundleId) // Note: using product_id column in access_requests pointing to category_bundles.id
+          .eq("product_id", resolvedBundleId)
           .eq("user_email", activeEmail)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -111,7 +111,7 @@ export default function CategoryBundleModal({
       const receiptUrl = publicUrlData.publicUrl;
 
       const { error: dbErr } = await supabase.from("access_requests").insert({
-        product_id: resolvedBundleId, // Linking to the category_bundles id
+        product_id: resolvedBundleId,
         user_id: currentUserId,
         user_name: userName,
         user_email: userEmail,
@@ -162,11 +162,30 @@ export default function CategoryBundleModal({
             <h2 className="text-gold-gradient text-2xl font-black">الدفع عبر InstaPay</h2>
             <p className="mt-1 text-xs text-[#8c6d31]">باقة تصنيف: {categoryName}</p>
 
-            <div className="my-5 rounded-2xl border border-[#d4af37]/40 bg-[#fbf7f0] p-5 text-center shadow-inner">
-              <p className="text-sm font-bold text-[#6e5422]">
-                قم بتحويل <span className="text-[#8b6508]">{bundlePrice} جنيه</span> إلى الرقم التالي:
+            <div className="my-5 rounded-2xl border border-[#d4af37]/40 bg-[#fbf7f0] p-5 text-center shadow-inner flex flex-col items-center">
+              <p className="text-sm font-bold text-[#6e5422] mb-3">
+                قم بتحويل <span className="text-[#8b6508]">{bundlePrice} جنيه</span> باستخدام الكود أو الرابط التالي:
               </p>
-              <p className="mt-2 text-3xl font-black tracking-wider text-[#5c4010]">01156874774</p>
+              
+              {/* QR Code Image - make sure to place your downloaded QR image in the public folder as instapay-qr.png */}
+              <div className="relative w-48 h-48 mb-4 bg-white p-2 rounded-xl border border-[#d4af37]/30 shadow-sm">
+                <Image 
+                  src="/instapay-qr.png" 
+                  alt="InstaPay QR Code" 
+                  fill 
+                  className="object-contain rounded-lg"
+                />
+              </div>
+
+              <a 
+                href="https://ipn.eg/S/walied120/instapay/3Oi2kt" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm font-bold text-[#8b6508] hover:underline break-all"
+              >
+                Click the link to send money to walied120@instapay
+              </a>
+              <span className="text-[10px] text-[#8c6d31] mt-1">Powered by InstaPay</span>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

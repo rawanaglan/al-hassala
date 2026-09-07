@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
 type PaidChat = {
   id: string;
@@ -145,9 +146,31 @@ export default function PaidChatSection() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h2 className="text-2xl font-black text-[#2c220f]">اسأل واستشر (دفع لكل سؤال)</h2>
-        <p className="text-sm font-semibold text-[#6e5422]">
-          قم بتحويل <span className="text-[#8b6508] font-bold">50 جنيه</span> عبر InstaPay إلى الرقم <span className="text-[#5c4010] font-black">01156874774</span>، ثم ارفق الإيصال مع سؤالك.
-        </p>
+        <div className="card-ceramic my-3 rounded-2xl border border-[#d4af37]/40 bg-[#fbf7f0] p-5 text-center shadow-inner flex flex-col items-center">
+          <p className="text-sm font-bold text-[#6e5422] mb-3">
+            قم بتحويل <span className="text-[#8b6508]">50 جنيه</span> باستخدام الكود أو الرابط التالي:
+          </p>
+          
+          {/* QR Code Image - make sure to place your downloaded QR image in the public folder as instapay-qr.png */}
+          <div className="relative w-48 h-48 mb-4 bg-white p-2 rounded-xl border border-[#d4af37]/30 shadow-sm">
+            <Image 
+              src="/instapay-qr.png" 
+              alt="InstaPay QR Code" 
+              fill 
+              className="object-contain rounded-lg"
+            />
+          </div>
+
+          <a 
+            href="https://ipn.eg/S/walied120/instapay/3Oi2kt" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm font-bold text-[#8b6508] hover:underline break-all"
+          >
+            Click the link to send money to walied120@instapay
+          </a>
+          <span className="text-[10px] text-[#8c6d31] mt-1">Powered by InstaPay</span>
+        </div>
       </div>
 
       {!userEmail ? (
