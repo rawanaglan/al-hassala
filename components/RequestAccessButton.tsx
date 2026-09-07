@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
 type Props = {
   productId: string;
@@ -101,15 +102,34 @@ export default function RequestAccessButton({
 
       {/* PAYMENT & RECEIPT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-3xl border border-[#d4af37]/30 bg-[#141414] p-8 text-right shadow-2xl text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md rounded-3xl border border-[#d4af37]/30 bg-[#141414] p-8 text-right shadow-2xl text-white my-8">
             <h2 className="text-2xl font-black text-[#d4af37]">الدفع عبر InstaPay</h2>
             
-            <div className="my-5 rounded-2xl border border-[#d4af37]/30 bg-black/40 p-5 text-center shadow-inner">
-              <p className="text-sm font-bold text-gray-300">
-                قم بتحويل <span className="text-[#d4af37]">{productPrice} جنيه</span> إلى الرقم التالي:
+            <div className="my-5 rounded-2xl border border-[#d4af37]/30 bg-black/40 p-5 text-center shadow-inner flex flex-col items-center">
+              <p className="text-sm font-bold text-gray-300 mb-3">
+                قم بتحويل <span className="text-[#d4af37]">{productPrice} جنيه</span> باستخدام الكود أو الرابط التالي:
               </p>
-              <p className="mt-2 text-3xl font-black tracking-wider text-white">01156874774</p>
+
+              {/* QR Code Image */}
+              <div className="relative w-48 h-48 mb-4 bg-white p-2 rounded-xl border border-[#d4af37]/30 shadow-sm">
+                <Image 
+                  src="/instapay-qr.jpeg" 
+                  alt="InstaPay QR Code" 
+                  fill 
+                  className="object-contain rounded-lg"
+                />
+              </div>
+
+              <a 
+                href="https://ipn.eg/S/walied120/instapay/3Oi2kt" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm font-bold text-[#d4af37] hover:underline break-all"
+              >
+                Click the link to send money to walied120@instapay
+              </a>
+              <span className="text-[10px] text-gray-400 mt-1">Powered by InstaPay</span>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
