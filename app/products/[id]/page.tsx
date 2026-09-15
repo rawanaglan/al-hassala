@@ -81,8 +81,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const isFree = !product.price || product.price === 0;
 
   if (isFree) {
-    // If it's a free item, you can decide if guests can see it or if they must login. 
-    // Keeping it true lets guests view free content, while paid content requires a real purchase/user.
     hasAccess = true; 
   } else if (user) {
     const { data: libraryItem } = await supabase
@@ -190,6 +188,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <div className="mt-8 space-y-4 border-t border-[#d4af37]/30 pt-6">
                 <h3 className="text-lg font-bold text-[#5c4010]">محتوى الملف</h3>
                 
+                {/* Embedded scrollable viewer container */}
                 <div 
                   className="relative h-[75vh] w-full overflow-y-auto rounded-2xl border border-[#d4af37]/40 bg-[#fbf7f0] shadow-inner"
                   style={{ 
