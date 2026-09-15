@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { cookies } from "next/headers";
 import ProductSearch from "@/components/ProductSearch";
 import LogoutButton from "@/components/LogoutButton";
 
 export default async function Home() {
   const supabase = await createSupabaseServerClient();
+  const cookieStore = await cookies();
+
+  // Check if the user is browsing as a guest via the Option 2 cookie
+  const isGuest = cookieStore.get("guest_mode")?.value === "true";
 
   // Get current logged-in user session
   const {
@@ -78,6 +83,16 @@ export default async function Home() {
                 </Link>
                 <LogoutButton />
               </div>
+            ) : isGuest ? (
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-semibold text-[#8c6d31]">أنت تصفح كضيف</span>
+                <Link
+                  href="/login"
+                  className="btn-gold-3d rounded-full px-5 py-2.5 text-xs font-bold"
+                >
+                  تسجيل الدخول
+                </Link>
+              </div>
             ) : (
               <Link
                 href="/login"
@@ -98,6 +113,16 @@ export default async function Home() {
                 مكتبتي
               </Link>
               <LogoutButton />
+            </div>
+          ) : isGuest ? (
+            <div className="flex items-center gap-3 md:hidden">
+              <span className="text-[10px] text-[#8c6d31]">ضيف</span>
+              <Link
+                href="/login"
+                className="btn-gold-3d rounded-full px-4 py-2 text-xs font-bold"
+              >
+                دخول
+              </Link>
             </div>
           ) : (
             <Link

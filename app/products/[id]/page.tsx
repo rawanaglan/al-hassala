@@ -35,6 +35,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const cookieStore = await cookies();
 
+  // Check if the user is browsing as a guest via Option 2 cookie
+  const isGuest = cookieStore.get("guest_mode")?.value === "true";
+
   // Create a server-side Supabase client using cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,7 +61,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
   );
 
   // 1. Fetch current logged-in user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // 2. Fetch Product data
   const { data: product } = await supabase
@@ -76,7 +81,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const isFree = !product.price || product.price === 0;
 
   if (isFree) {
-    hasAccess = true;
+    // If it's a free item, you can decide if guests can see it or if they must login. 
+    // Keeping it true lets guests view free content, while paid content requires a real purchase/user.
+    hasAccess = true; 
   } else if (user) {
     const { data: libraryItem } = await supabase
       .from("user_library")
@@ -202,13 +209,25 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 {isFree ? "مجاني" : `${product.price} جنيه`}
               </span>
 
-              <RequestAccessButton
-                productId={product.id}
-                productTitle={product.title}
-                productPrice={product.price}
-                userEmail={user?.email || null}
-                userId={user?.id || null}
-              />
+              {isGuest ? (
+                <div className="flex flex-col items-end gap-2">
+                  <span className="text-xs text-[#8c6d31]">أنت تصفح كضيف. يلزم تسجيل الدخول لطلب المحتوى.</span>
+                  <Link
+                    href="/login"
+                    className="rounded-xl bg-[#5c4010] px-6 py-2.5 text-xs font-bold text-white transition hover:bg-[#8b6508]"
+                  >
+                    تسجيل الدخول / إنشاء حساب
+                  </Link>
+                </div>
+              ) : (
+                <RequestAccessButton
+                  productId={product.id}
+                  productTitle={product.title}
+                  productPrice={product.price}
+                  userEmail={user?.email || null}
+                  userId={user?.id || null}
+                />
+              )}
             </div>
           )}
         </div>

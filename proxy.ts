@@ -9,6 +9,9 @@ export async function proxy(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  // Check if user is browsing as a guest via Option 2 cookie
+  const isGuest = request.cookies.get("guest_mode")?.value === "true";
+
   if (!supabaseUrl || !supabaseAnonKey) {
     return response;
   }

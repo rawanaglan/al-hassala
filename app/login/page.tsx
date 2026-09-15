@@ -167,6 +167,25 @@ router.refresh();
             >
               {isSignUp ? "Log in" : "Sign up"}
             </button>
+            <form action="/api/guest-login" method="POST">
+ <div className="mt-6 space-y-4">
+  <div className="relative flex py-2 items-center">
+    <div className="flex-grow border-t border-[#d4af37]/30"></div>
+    <span className="flex-shrink mx-4 text-xs text-[#8c6d31]">أو</span>
+    <div className="flex-grow border-t border-[#d4af37]/30"></div>
+  </div>
+
+  {/* Continue as Guest Form */}
+  <form action="/api/guest-login" method="POST">
+    <button
+      type="submit"
+      className="w-full rounded-xl border border-[#d4af37]/40 bg-[#fbf7f0] py-3 text-sm font-bold text-[#5c4010] transition hover:bg-[#f3ebd8] shadow-sm"
+    >
+      المتابعة كضيف
+    </button>
+  </form>
+</div>
+</form>
           </div>
 
         </div>
