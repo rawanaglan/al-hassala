@@ -105,7 +105,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       if (filePath) {
         const { data: signedData } = await supabase.storage
           .from("products")
-          .createSignedUrl(filePath, 60);
+          .createSignedUrl(filePath, 300); // 5 minutes validity for viewer session
 
         if (signedData?.signedUrl) {
           resolvedFileUrl = signedData.signedUrl;
@@ -127,6 +127,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
       }
     }
   }
+
+  // Wrap the signed URL in Google's viewer proxy so mobile devices render full page scrolling natively
+  const embeddedViewerUrl = resolvedFileUrl 
+    ? `https://docs.google.com/gview?url=${encodeURIComponent(resolvedFileUrl)}&embedded=true`
+    : null;
 
   return (
     <div dir="rtl" className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] lg:px-8">
@@ -184,11 +189,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
           {/* Secure Viewer Section */}
           {hasAccess ? (
-            resolvedFileUrl ? (
+            embeddedViewerUrl ? (
               <div className="mt-8 space-y-4 border-t border-[#d4af37]/30 pt-6">
                 <h3 className="text-lg font-bold text-[#5c4010]">محتوى الملف</h3>
                 
-                {/* Embedded scrollable viewer container */}
                 <div 
                   className="relative h-[75vh] w-full overflow-y-auto rounded-2xl border border-[#d4af37]/40 bg-[#fbf7f0] shadow-inner"
                   style={{ 
@@ -197,7 +201,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   }}
                 >
                   <iframe
-                    src={`${resolvedFileUrl}#toolbar=0&navpanes=0`}
+                    src={embeddedViewerUrl}
                     className="h-full w-full border-0 select-none pointer-events-auto"
                     title={product.title}
                   />
