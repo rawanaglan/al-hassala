@@ -182,7 +182,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Secure Viewer Section using <object> tag */}
+          {/* Secure Viewer Section with Touch Scrolling & Arrow Block Overlay */}
           {hasAccess ? (
             resolvedFileUrl ? (
               <div className="mt-8 space-y-4 border-t border-[#d4af37]/30 pt-6">
@@ -192,10 +192,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   className="relative h-[80vh] w-full overflow-y-auto rounded-2xl border border-[#d4af37]/40 bg-[#fbf7f0] shadow-inner"
                   style={{ WebkitOverflowScrolling: "touch" }}
                 >
+                  {/* Blocking Overlay covering the top-right browser download/open arrow */}
+                  <div className="absolute top-2 right-2 z-30 h-12 w-14 bg-[#fbf7f0] rounded-lg pointer-events-auto shadow-sm" />
+
                   <object
                     data={`${resolvedFileUrl}#toolbar=0&navpanes=0&view=FitH`}
                     type="application/pdf"
-                    className="h-full w-full select-none"
+                    className="h-full w-full select-none relative z-10"
                   >
                     <div className="flex h-full items-center justify-center p-6 text-center text-sm text-[#8c6d31]">
                       عذراً، متصفح هاتفك لا يدعم عرض الملف مباشرة.
