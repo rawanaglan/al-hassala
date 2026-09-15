@@ -177,11 +177,6 @@ export default async function CategoryPage({ params }: PageProps) {
               الرئيسية
             </Link>
 
-            <span className="opacity-40">/</span>
-            <Link href="/categories" className="transition hover:text-[#5c4010]">
-              التصنيفات
-            </Link>
-
             {breadcrumbTrail.map((ancestor) => (
               <span key={ancestor.id} className="flex items-center gap-2">
                 <span className="opacity-40">/</span>
