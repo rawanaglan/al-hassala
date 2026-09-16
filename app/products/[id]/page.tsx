@@ -29,6 +29,59 @@ function getStoragePath(url: string | null | undefined): string | null {
   }
 }
 
+// Helper to automatically convert regular YouTube or TikTok links into embed links
+function getEmbedUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+
+  try {
+    const parsedUrl = new URL(url);
+
+    // --- YouTube Handling ---
+    if (parsedUrl.hostname === "youtu.be") {
+      const videoId = parsedUrl.pathname.slice(1);
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+    
+    if (parsedUrl.hostname.includes("youtube.com")) {
+      const videoId = parsedUrl.searchParams.get("v");
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+      
+      const pathParts = parsedUrl.pathname.split("/");
+      const shortsIndex = pathParts.indexOf("shorts");
+      if (shortsIndex !== -1 && pathParts[shortsIndex + 1]) {
+        return `https://www.youtube.com/embed/${pathParts[shortsIndex + 1]}`;
+      }
+      if (pathParts.includes("embed")) {
+        return url; // Already an embed link
+      }
+    }
+
+    // --- TikTok Handling ---
+    if (parsedUrl.hostname.includes("tiktok.com")) {
+      // Handles vm.tiktok.com/<id> or tiktok.com/@user/video/<id>
+      let videoId = "";
+      const pathParts = parsedUrl.pathname.split("/");
+      
+      const videoIndex = pathParts.indexOf("video");
+      if (videoIndex !== -1 && pathParts[videoIndex + 1]) {
+        videoId = pathParts[videoIndex + 1];
+      } else if (parsedUrl.hostname === "vm.tiktok.com" && pathParts[1]) {
+        videoId = pathParts[1];
+      }
+
+      if (videoId) {
+        return `https://www.tiktok.com/embed/v2/${videoId}`;
+      }
+    }
+  } catch {
+    // Fallback if URL parsing fails
+  }
+
+  return url;
+}
+
 export default async function ProductDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const productId = resolvedParams.id;
@@ -128,6 +181,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
     }
   }
 
+  // Convert video link (supports both YouTube and TikTok automatically)
+  const embeddedVideoUrl = getEmbedUrl(product.video_url);
+
   return (
     <div dir="rtl" className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] lg:px-8">
       <div className="mx-auto max-w-5xl space-y-6">
@@ -160,13 +216,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </p>
           )}
 
-          {/* Explanation Video Section */}
-          {product.video_url && (
+          {/* Explanation Video Section (Supports YouTube & TikTok) */}
+          {embeddedVideoUrl && (
             <div className="mt-8 space-y-3">
               <h3 className="text-lg font-bold text-[#5c4010]">فيديو الشرح التوضيحي</h3>
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-[#d4af37]/30 bg-black shadow-inner">
                 <iframe
-                  src={product.video_url.includes("watch?v=") ? product.video_url.replace("watch?v=", "embed/") : product.video_url}
+                  src={embeddedVideoUrl}
                   title="فيديو الشرح"
                   className="absolute inset-0 h-full w-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -182,7 +238,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Secure Viewer Section with Touch Scrolling & Arrow Block Overlay */}
+          {/* Secure Viewer Section */}
           {hasAccess ? (
             resolvedFileUrl ? (
               <div className="mt-8 space-y-4 border-t border-[#d4af37]/30 pt-6">
