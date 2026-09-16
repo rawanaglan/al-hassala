@@ -5,6 +5,10 @@ import { cookies } from "next/headers";
 import BackButton from "@/components/BackButton";
 import RequestAccessButton from "@/components/RequestAccessButton";
 
+// Force dynamic rendering so database updates show up instantly without caching
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };
@@ -54,13 +58,12 @@ function getEmbedUrl(url: string | null | undefined): string | null {
         return `https://www.youtube.com/embed/${pathParts[shortsIndex + 1]}`;
       }
       if (pathParts.includes("embed")) {
-        return url; // Already an embed link
+        return url;
       }
     }
 
     // --- TikTok Handling ---
     if (parsedUrl.hostname.includes("tiktok.com")) {
-      // Handles vm.tiktok.com/<id> or tiktok.com/@user/video/<id>
       let videoId = "";
       const pathParts = parsedUrl.pathname.split("/");
       
@@ -118,7 +121,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 2. Fetch Product data
+  // 2. Fetch Product data fresh from database
   const { data: product } = await supabase
     .from("products")
     .select("*")
@@ -183,6 +186,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   // Convert video link (supports both YouTube and TikTok automatically)
   const embeddedVideoUrl = getEmbedUrl(product.video_url);
+  const isTikTok = embeddedVideoUrl?.includes("tiktok.com");
 
   return (
     <div dir="rtl" className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] lg:px-8">
@@ -216,11 +220,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </p>
           )}
 
-          {/* Explanation Video Section (Supports YouTube & TikTok) */}
+          {/* Explanation Video Section (Adaptive for YouTube widescreen & TikTok vertical) */}
           {embeddedVideoUrl && (
             <div className="mt-8 space-y-3">
               <h3 className="text-lg font-bold text-[#5c4010]">فيديو الشرح التوضيحي</h3>
-              <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-[#d4af37]/30 bg-black shadow-inner">
+              <div 
+                className={`relative w-full overflow-hidden rounded-2xl border border-[#d4af37]/30 bg-black shadow-inner mx-auto ${
+                  isTikTok ? "max-w-xs h-[580px]" : "aspect-video"
+                }`}
+              >
                 <iframe
                   src={embeddedVideoUrl}
                   title="فيديو الشرح"
