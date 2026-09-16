@@ -33,36 +33,36 @@ function getStoragePath(url: string | null | undefined): string | null {
   }
 }
 
-// Helper to automatically convert regular YouTube or TikTok links into embed links
+// Helper to automatically convert regular YouTube or TikTok links into clean embed links
 function getEmbedUrl(url: string | null | undefined): string | null {
   if (!url) return null;
 
   try {
     const parsedUrl = new URL(url);
 
-    // --- YouTube Handling ---
+    // --- YouTube Handling (rel=0 prevents showing external recommended videos) ---
     if (parsedUrl.hostname === "youtu.be") {
       const videoId = parsedUrl.pathname.slice(1);
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : url;
     }
     
     if (parsedUrl.hostname.includes("youtube.com")) {
       const videoId = parsedUrl.searchParams.get("v");
       if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}`;
+        return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
       }
       
       const pathParts = parsedUrl.pathname.split("/");
       const shortsIndex = pathParts.indexOf("shorts");
       if (shortsIndex !== -1 && pathParts[shortsIndex + 1]) {
-        return `https://www.youtube.com/embed/${pathParts[shortsIndex + 1]}`;
+        return `https://www.youtube.com/embed/${pathParts[shortsIndex + 1]}?rel=0&modestbranding=1`;
       }
       if (pathParts.includes("embed")) {
-        return url;
+        return url.includes("?") ? `${url}&rel=0` : `${url}?rel=0`;
       }
     }
 
-    // --- TikTok Handling ---
+    // --- TikTok Handling (hides related clutter where possible via embed parameters) ---
     if (parsedUrl.hostname.includes("tiktok.com")) {
       let videoId = "";
       const pathParts = parsedUrl.pathname.split("/");
@@ -75,7 +75,8 @@ function getEmbedUrl(url: string | null | undefined): string | null {
       }
 
       if (videoId) {
-        return `https://www.tiktok.com/embed/v2/${videoId}`;
+        // Adding parameters to minimize related video overlays at the end of playback
+        return `https://www.tiktok.com/embed/v2/${videoId}?autoplay=0&loop=0`;
       }
     }
   } catch {
@@ -220,7 +221,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </p>
           )}
 
-          {/* Explanation Video Section (Adaptive for YouTube widescreen & TikTok vertical) */}
+          {/* Explanation Video Section */}
           {embeddedVideoUrl && (
             <div className="mt-8 space-y-3">
               <h3 className="text-lg font-bold text-[#5c4010]">فيديو الشرح التوضيحي</h3>
