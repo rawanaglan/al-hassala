@@ -31,23 +31,6 @@ type PageProps = {
   }>;
 };
 
-function getSafeFileUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  if (url.startsWith("file://")) return null;
-
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (supabaseUrl) {
-    const cleanPath = url.replace(/^\//, "");
-    return `${supabaseUrl}/storage/v1/object/public/${cleanPath}`;
-  }
-
-  return null;
-}
-
 async function getBreadcrumbTrail(
   parentId: string | null
 ): Promise<Category[]> {
@@ -320,7 +303,6 @@ export default async function CategoryPage({ params }: PageProps) {
                 {productList.length > 0 ? (
                   <div className="overflow-hidden rounded-3xl border border-[#d4af37]/40 bg-white/80 backdrop-blur-md shadow-lg divide-y divide-[#d4af37]/20">
                     {productList.map((product) => {
-                      const resolvedFileUrl = getSafeFileUrl(product.file_url);
                       const isPaid = product.price && product.price > 0;
 
                       return (
@@ -343,27 +325,12 @@ export default async function CategoryPage({ params }: PageProps) {
                           </div>
 
                           <div className="flex shrink-0 items-center gap-3">
-                            {isPaid ? (
-                              <Link
-                                href={`/products/${product.id}`}
-                                className="btn-gold-3d inline-flex items-center rounded-xl px-5 py-2.5 text-xs font-bold"
-                              >
-                                شراء ({product.price} جنيه)
-                              </Link>
-                            ) : resolvedFileUrl ? (
-                              <a
-                                href={resolvedFileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-gold-3d inline-flex items-center rounded-xl px-5 py-2.5 text-xs font-bold"
-                              >
-                                فتح الملف ↗
-                              </a>
-                            ) : (
-                              <span className="text-xs font-semibold text-[#8c6d31]/60">
-                                غير متوفر
-                              </span>
-                            )}
+                            <Link
+                              href={`/products/${product.id}`}
+                              className="btn-gold-3d inline-flex items-center rounded-xl px-5 py-2.5 text-xs font-bold"
+                            >
+                              {isPaid ? `شراء (${product.price} جنيه)` : "عرض التفاصيل والشرح"}
+                            </Link>
                           </div>
                         </div>
                       );

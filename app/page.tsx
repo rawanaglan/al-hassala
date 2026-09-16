@@ -337,12 +337,15 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="flex gap-6 text-xs text-[#8c6d31]">
-            <Link href="/" className="transition hover:text-[#2c220f]">
+          <div className="flex items-center gap-4 text-xs">
+            <Link 
+              href="/" 
+              className="btn-gold-3d inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-xs font-bold"
+            >
               الرئيسية
             </Link>
 
-            <Link href="/library" className="transition hover:text-[#2c220f]">
+            <Link href="/library" className="transition hover:text-[#2c220f] text-[#8c6d31] font-semibold">
               مكتبتي
             </Link>
           </div>
