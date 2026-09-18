@@ -13,6 +13,7 @@ type Category = {
   description: string | null;
   parent_id: string | null;
   bundle_price: number | null;
+  image_url: string | null;
 };
 
 type Product = {
@@ -40,7 +41,7 @@ async function getBreadcrumbTrail(
   while (currentParentId) {
     const { data: parent } = await supabase
       .from("categories")
-      .select("id, name, description, parent_id, bundle_price")
+      .select("id, name, description, parent_id, bundle_price, image_url")
       .eq("id", currentParentId)
       .single();
 
@@ -59,7 +60,7 @@ export default async function CategoryPage({ params }: PageProps) {
   // 1. FETCH CURRENT CATEGORY
   const { data: category, error: categoryError } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, bundle_price")
+    .select("id, name, description, parent_id, bundle_price, image_url")
     .eq("id", id)
     .single();
 
@@ -86,7 +87,7 @@ export default async function CategoryPage({ params }: PageProps) {
   // 2. FETCH DIRECT SUBCATEGORIES
   const { data: subcategoriesData } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, bundle_price")
+    .select("id, name, description, parent_id, bundle_price, image_url")
     .eq("parent_id", id)
     .order("name", { ascending: true });
 
@@ -270,7 +271,17 @@ export default async function CategoryPage({ params }: PageProps) {
                         </span>
                       </div>
 
-                      <div className="relative z-10 my-6">
+                      <div className="relative z-10 my-6 flex flex-col items-center text-center">
+                        {sub.image_url ? (
+                          <div className="mb-6 w-32 sm:w-40 overflow-hidden rounded-2xl shadow-md border border-[#d4af37]/30 bg-white/40">
+                            <img
+                              src={sub.image_url}
+                              alt={sub.name}
+                              className="aspect-[3/4] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          </div>
+                        ) : null}
+
                         <h3 className="text-3xl font-black text-[#2c220f] transition-colors duration-300 group-hover:text-[#8b6508]">
                           {sub.name}
                         </h3>
