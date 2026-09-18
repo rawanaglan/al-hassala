@@ -10,6 +10,7 @@ type Category = {
   parent_id: string | null;
   category_type: string | null;
   bundle_price: number | null;
+  image_url: string | null;
 };
 
 type PageProps = {
@@ -27,7 +28,7 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
   // 1. Fetch all categories for the parent select dropdown
   const { data: catList } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, category_type, bundle_price")
+    .select("id, name, description, parent_id, category_type, bundle_price, image_url")
     .order("name", { ascending: true });
 
   const allCategories = (catList || []) as Category[];
@@ -37,7 +38,7 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
   if (editId) {
     const { data } = await supabase
       .from("categories")
-      .select("id, name, description, parent_id, category_type, bundle_price")
+      .select("id, name, description, parent_id, category_type, bundle_price, image_url")
       .eq("id", editId)
       .maybeSingle();
 
@@ -55,12 +56,33 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
     const description = formData.get("description") as string;
     const parentId = formData.get("parent_id") as string;
     const bundlePrice = formData.get("bundle_price") as string;
+    const imageUrl = formData.get("image_url") as string;
+    const imageFile = formData.get("image_file") as File | null;
+
+    let finalImageUrl = imageUrl?.trim() || null;
+
+    // Handle file upload if a new file is provided and Supabase Storage is used
+    if (imageFile && imageFile.size > 0) {
+      const fileName = `category-${Date.now()}-${imageFile.name.replace(/\s+/g, "-")}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("products") // or your specific bucket name
+        .upload(fileName, imageFile);
+
+      if (!uploadError && uploadData) {
+        const { data: publicUrlData } = supabase.storage
+          .from("products")
+          .getPublicUrl(uploadData.path);
+        
+        finalImageUrl = publicUrlData.publicUrl;
+      }
+    }
 
     const payload = {
       name: name.trim(),
       description: description?.trim() || null,
       parent_id: parentId || null,
       bundle_price: bundlePrice ? parseFloat(bundlePrice) : null,
+      image_url: finalImageUrl,
     };
 
     if (categoryId) {
@@ -125,6 +147,46 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
               placeholder="مثال: 150 (اتركه فارغاً إذا لم توجد باقة)"
               className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-sm font-medium focus:border-[#8b6508] focus:outline-none"
             />
+          </div>
+
+          {/* CATEGORY IMAGE */}
+          <div className="space-y-3">
+            <label className="block mb-2 text-sm font-bold text-[#3a2800]">
+              صورة التصنيف العمودية (تظهر فوق العنوان)
+            </label>
+            
+            {existingCat?.image_url && (
+              <div className="flex items-center gap-4 p-3 rounded-2xl border border-[#d4af37]/30 bg-white/50">
+                <img 
+                  src={existingCat.image_url} 
+                  alt="Current" 
+                  className="w-16 h-20 object-cover rounded-xl border border-[#d4af37]/30" 
+                />
+                <span className="text-xs text-[#8c6d31] font-semibold">الصورة الحالية مسجلة بالفعل</span>
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-[#8c6d31] mb-1">رفع ملف صورة جديد</label>
+                <input
+                  type="file"
+                  name="image_file"
+                  accept="image/*"
+                  className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-3 py-2 text-xs font-medium file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#d4af37]/20 file:text-[#5c4010]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#8c6d31] mb-1">أو رابط الصورة مباشرة (URL)</label>
+                <input
+                  type="url"
+                  name="image_url"
+                  defaultValue={existingCat?.image_url || ""}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-2.5 text-sm font-medium focus:border-[#8b6508] focus:outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* DESCRIPTION */}
