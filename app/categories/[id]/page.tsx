@@ -33,6 +33,28 @@ type PageProps = {
   }>;
 };
 
+// Helper function to resolve relative storage paths or raw keys into absolute URLs
+function getSafeImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("file://")) return null;
+
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    const cleanPath = url.replace(/^\//, "");
+    // If path doesn't already include storage public prefix, append it
+    if (!cleanPath.includes("storage/v1/object/public")) {
+      return `${supabaseUrl}/storage/v1/object/public/${cleanPath}`;
+    }
+    return url;
+  }
+
+  return null;
+}
+
 async function getBreadcrumbTrail(
   parentId: string | null
 ): Promise<Category[]> {
@@ -144,6 +166,7 @@ export default async function CategoryPage({ params }: PageProps) {
   const breadcrumbTrail = await getBreadcrumbTrail(category.parent_id);
 
   const hasBundle = category.bundle_price !== null && category.bundle_price > 0;
+  const resolvedCategoryImg = getSafeImageUrl(category.image_url);
 
   return (
     <main
@@ -183,10 +206,10 @@ export default async function CategoryPage({ params }: PageProps) {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-4">
               {/* Parent Category Banner / Cover Photo integration if available */}
-              {category.image_url && (
+              {resolvedCategoryImg && (
                 <div className="relative h-48 w-full max-w-xl overflow-hidden rounded-3xl border-2 border-[#d4af37]/40 shadow-md">
                   <Image
-                    src={category.image_url}
+                    src={resolvedCategoryImg}
                     alt={category.name}
                     fill
                     className="object-cover"
@@ -268,51 +291,55 @@ export default async function CategoryPage({ params }: PageProps) {
                 </h2>
 
                 <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                  {subcategories.map((sub, idx) => (
-                    <Link
-                      key={sub.id}
-                      href={`/categories/${sub.id}`}
-                      className="group relative flex min-h-[340px] flex-col justify-between overflow-hidden rounded-[2rem] border border-[#d4af37]/40 bg-gradient-to-br from-[#ffffff] via-[#f7f5ef] to-[#eee8d5] p-6 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-[#d4af37]"
-                    >
-                      <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:16px_16px]" />
+                  {subcategories.map((sub, idx) => {
+                    const resolvedSubImg = getSafeImageUrl(sub.image_url);
 
-                      {/* Subcategory Cover Photo thumbnail */}
-                      {sub.image_url ? (
-                        <div className="relative h-36 w-full overflow-hidden rounded-2xl border border-[#d4af37]/30 shadow-inner">
-                          <Image
-                            src={sub.image_url}
-                            alt={sub.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        </div>
-                      ) : (
-                        <div className="relative z-10 flex items-center justify-between">
-                          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-xs font-black text-[#8b6508] shadow-sm backdrop-blur-md">
-                            0{idx + 1}
-                          </span>
-                          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-base font-bold text-[#8b6508] shadow-sm backdrop-blur-md transition-transform duration-300 group-hover:-translate-x-2">
-                            ←
-                          </span>
-                        </div>
-                      )}
+                    return (
+                      <Link
+                        key={sub.id}
+                        href={`/categories/${sub.id}`}
+                        className="group relative flex min-h-[340px] flex-col justify-between overflow-hidden rounded-[2rem] border border-[#d4af37]/40 bg-gradient-to-br from-[#ffffff] via-[#f7f5ef] to-[#eee8d5] p-6 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-[#d4af37]"
+                      >
+                        <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:16px_16px]" />
 
-                      <div className="relative z-10 my-4">
-                        <h3 className="text-2xl font-black text-[#2c220f] transition-colors duration-300 group-hover:text-[#8b6508]">
-                          {sub.name}
-                        </h3>
-                        {sub.description && (
-                          <p className="mt-2 line-clamp-2 text-xs font-semibold leading-relaxed text-[#5c4010]">
-                            {sub.description}
-                          </p>
+                        {/* Subcategory Cover Photo thumbnail */}
+                        {resolvedSubImg ? (
+                          <div className="relative h-36 w-full overflow-hidden rounded-2xl border border-[#d4af37]/30 shadow-inner">
+                            <Image
+                              src={resolvedSubImg}
+                              alt={sub.name}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          </div>
+                        ) : (
+                          <div className="relative z-10 flex items-center justify-between">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-xs font-black text-[#8b6508] shadow-sm backdrop-blur-md">
+                              0{idx + 1}
+                            </span>
+                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-base font-bold text-[#8b6508] shadow-sm backdrop-blur-md transition-transform duration-300 group-hover:-translate-x-2">
+                              ←
+                            </span>
+                          </div>
                         )}
-                      </div>
 
-                      <div className="relative z-10 flex items-center gap-3 pt-2">
-                        <div className="h-1.5 w-12 rounded-full bg-[#d4af37] transition-all duration-500 group-hover:w-full" />
-                      </div>
-                    </Link>
-                  ))}
+                        <div className="relative z-10 my-4">
+                          <h3 className="text-2xl font-black text-[#2c220f] transition-colors duration-300 group-hover:text-[#8b6508]">
+                            {sub.name}
+                          </h3>
+                          {sub.description && (
+                            <p className="mt-2 line-clamp-2 text-xs font-semibold leading-relaxed text-[#5c4010]">
+                              {sub.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="relative z-10 flex items-center gap-3 pt-2">
+                          <div className="h-1.5 w-12 rounded-full bg-[#d4af37] transition-all duration-500 group-hover:w-full" />
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
