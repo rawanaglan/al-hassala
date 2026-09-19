@@ -10,6 +10,7 @@ type Category = {
   description: string | null;
   parent_id: string | null;
   bundle_price: number | null;
+  image_url: string | null;
 };
 
 type Product = {
@@ -108,10 +109,10 @@ async function handleBundleOrder(formData: FormData) {
 export default async function CategoryPage({ params }: PageProps) {
   const { id } = await params;
 
-  // 1. FETCH CATEGORY (including bundle_price)
+  // 1. FETCH CATEGORY (including bundle_price and image_url)
   const { data: category, error: categoryError } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, bundle_price")
+    .select("id, name, description, parent_id, bundle_price, image_url")
     .eq("id", id)
     .single();
 
@@ -125,10 +126,10 @@ export default async function CategoryPage({ params }: PageProps) {
     .select("instapay_username, instapay_qr_url")
     .single();
 
-  // 3. FETCH SUBCATEGORIES
+  // 3. FETCH SUBCATEGORIES (including image_url)
   const { data: subcategoriesData } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, bundle_price")
+    .select("id, name, description, parent_id, bundle_price, image_url")
     .eq("parent_id", id)
     .order("name", { ascending: true });
 
@@ -181,7 +182,7 @@ export default async function CategoryPage({ params }: PageProps) {
   const hasBundlePrice = category.bundle_price !== null && category.bundle_price > 0;
 
   return (
-    <main dir="rtl" className="min-h-screen text-[var(--foreground)]">
+    <main dir="rtl" className="min-h-screen text-[var(--foreground)] bg-[#faf9f6]">
       {/* HEADER & BREADCRUMBS */}
       <header className="border-b border-[var(--border)] bg-white/50 py-10 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-6 lg:px-10 space-y-6">
@@ -209,29 +210,44 @@ export default async function CategoryPage({ params }: PageProps) {
             <span className="font-bold text-[#3a2800]">{category.name}</span>
           </nav>
 
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-gold-gradient text-3xl font-bold tracking-tight sm:text-4xl">
-                {category.name}
-              </h1>
-
-              {category.description && (
-                <p className="mt-3 max-w-2xl text-base font-medium text-[#6b5839]">
-                  {category.description}
-                </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="space-y-4 max-w-3xl">
+              {/* Category Cover Photo Banner */}
+              {category.image_url && (
+                <div className="relative h-56 w-full overflow-hidden rounded-3xl border-2 border-[#d4af37]/40 shadow-md">
+                  <Image
+                    src={category.image_url}
+                    alt={category.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
               )}
+
+              <div>
+                <h1 className="text-gold-gradient text-3xl font-black tracking-tight sm:text-4xl">
+                  {category.name}
+                </h1>
+
+                {category.description && (
+                  <p className="mt-3 text-base font-medium text-[#6b5839] leading-relaxed">
+                    {category.description}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* BUNDLE BADGE CALLOUT */}
             {hasBundlePrice && (
-              <div className="card-ceramic rounded-2xl border border-[#d4af37]/40 p-4 self-start flex items-center gap-4 bg-gradient-to-r from-[#fffdfa] to-[#f7eed3]">
+              <div className="card-ceramic rounded-3xl border border-[#d4af37]/40 p-6 self-start flex items-center gap-5 bg-gradient-to-r from-[#fffdfa] to-[#f7eed3] shadow-lg shrink-0">
                 <div>
-                  <span className="text-xs font-bold text-[#8b6508]">باقة التصنيف بالكامل</span>
-                  <p className="text-xl font-black text-[#2c220f]">{category.bundle_price} جنيه</p>
+                  <span className="text-xs font-bold text-[#8b6508]">باقة التصنيف بالكامل ✨</span>
+                  <p className="text-2xl font-black text-[#2c220f] mt-0.5">{category.bundle_price} جنيه</p>
                 </div>
                 <a
                   href="#bundle-checkout"
-                  className="btn-gold-3d rounded-xl px-4 py-2.5 text-xs font-black shadow-md"
+                  className="btn-gold-3d rounded-2xl px-5 py-3 text-xs font-black shadow-md"
                 >
                   شراء الباقة 📦
                 </a>
@@ -253,28 +269,43 @@ export default async function CategoryPage({ params }: PageProps) {
               </span>
             </h2>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {subcategories.map((sub) => (
                 <Link
                   key={sub.id}
                   href={`/categories/${sub.id}`}
-                  className="card-ceramic group flex flex-col justify-between rounded-2xl p-5 transition hover:scale-[1.01]"
+                  className="card-ceramic group flex flex-col justify-between rounded-3xl p-5 transition hover:scale-[1.01] overflow-hidden border border-[#d4af37]/30 shadow-md hover:border-[#d4af37]"
                 >
-                  <div>
-                    <div className="mb-3 flex items-center justify-between text-2xl">
-                      <span>📂</span>
-                      <span className="text-sm font-bold text-[#8b6508] transition group-hover:-translate-x-1">
-                        ←
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-[#3a2800]">
-                      {sub.name}
-                    </h3>
-                    {sub.description && (
-                      <p className="mt-1 line-clamp-2 text-xs text-[#6b5839]">
-                        {sub.description}
-                      </p>
+                  <div className="space-y-4">
+                    {/* Subcategory Cover Photo thumbnail */}
+                    {sub.image_url ? (
+                      <div className="relative h-36 w-full overflow-hidden rounded-2xl border border-[#d4af37]/30 shadow-inner">
+                        <Image
+                          src={sub.image_url}
+                          alt={sub.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between text-2xl pt-2 px-1">
+                        <span>📂</span>
+                        <span className="text-sm font-bold text-[#8b6508] transition group-hover:-translate-x-1">
+                          ←
+                        </span>
+                      </div>
                     )}
+
+                    <div className="px-1">
+                      <h3 className="text-lg font-bold text-[#3a2800] group-hover:text-[#8b6508] transition-colors">
+                        {sub.name}
+                      </h3>
+                      {sub.description && (
+                        <p className="mt-1 line-clamp-2 text-xs text-[#6b5839]">
+                          {sub.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -293,7 +324,7 @@ export default async function CategoryPage({ params }: PageProps) {
           </h2>
 
           {productList.length > 0 ? (
-            <div className="card-ceramic overflow-hidden rounded-2xl divide-y divide-[var(--border)]">
+            <div className="card-ceramic overflow-hidden rounded-3xl divide-y divide-[var(--border)] shadow-lg">
               {productList.map((product) => {
                 const resolvedFileUrl = getSafeFileUrl(product.file_url);
                 const isPaid = product.price && product.price > 0;
@@ -301,12 +332,12 @@ export default async function CategoryPage({ params }: PageProps) {
                 return (
                   <div
                     key={product.id}
-                    className="flex flex-col gap-4 p-5 transition hover:bg-black/[0.02] sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-4 p-6 transition hover:bg-black/[0.02] sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-start gap-3">
                       <span className="mt-0.5 text-xl">🔗</span>
                       <div>
-                        <span className="font-bold text-[#3a2800]">
+                        <span className="font-bold text-[#3a2800] text-base">
                           {product.title}
                         </span>
                         {product.short_description && (
@@ -321,7 +352,7 @@ export default async function CategoryPage({ params }: PageProps) {
                       {isPaid ? (
                         <Link
                           href={`/products/${product.id}`}
-                          className="btn-gold-3d rounded-full px-5 py-2 text-xs font-extrabold"
+                          className="btn-gold-3d rounded-full px-5 py-2.5 text-xs font-extrabold"
                         >
                           شراء ({product.price} جنيه)
                         </Link>
@@ -330,7 +361,7 @@ export default async function CategoryPage({ params }: PageProps) {
                           href={resolvedFileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn-gold-3d rounded-full px-5 py-2 text-xs font-extrabold"
+                          className="btn-gold-3d rounded-full px-5 py-2.5 text-xs font-extrabold"
                         >
                           فتح الملف ↗
                         </a>
@@ -345,7 +376,7 @@ export default async function CategoryPage({ params }: PageProps) {
               })}
             </div>
           ) : (
-            <div className="card-ceramic rounded-2xl border-dashed p-10 text-center text-sm font-medium text-[#8c7a5c]">
+            <div className="card-ceramic rounded-3xl border-dashed p-10 text-center text-sm font-medium text-[#8c7a5c]">
               لا توجد ملفات مرفوعة في هذا القسم حالياً.
             </div>
           )}

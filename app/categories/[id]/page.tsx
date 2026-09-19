@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ProductSearch from "@/components/ProductSearch";
@@ -13,6 +14,7 @@ type Category = {
   description: string | null;
   parent_id: string | null;
   bundle_price: number | null;
+  image_url: string | null;
 };
 
 type Product = {
@@ -40,7 +42,7 @@ async function getBreadcrumbTrail(
   while (currentParentId) {
     const { data: parent } = await supabase
       .from("categories")
-      .select("id, name, description, parent_id, bundle_price")
+      .select("id, name, description, parent_id, bundle_price, image_url")
       .eq("id", currentParentId)
       .single();
 
@@ -59,7 +61,7 @@ export default async function CategoryPage({ params }: PageProps) {
   // 1. FETCH CURRENT CATEGORY
   const { data: category, error: categoryError } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, bundle_price")
+    .select("id, name, description, parent_id, bundle_price, image_url")
     .eq("id", id)
     .single();
 
@@ -69,7 +71,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const isConsultationsCategory = category.name.trim() === "استشارات";
 
-  // Fetch dedicated category bundle ID from the new category_bundles table
+  // Fetch dedicated category bundle ID from category_bundles table
   let categoryBundleId: string | null = null;
   if (category.bundle_price !== null && category.bundle_price > 0) {
     const { data: bundleData } = await supabase
@@ -86,13 +88,13 @@ export default async function CategoryPage({ params }: PageProps) {
   // 2. FETCH DIRECT SUBCATEGORIES
   const { data: subcategoriesData } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, bundle_price")
+    .select("id, name, description, parent_id, bundle_price, image_url")
     .eq("parent_id", id)
     .order("name", { ascending: true });
 
   const subcategories = (subcategoriesData || []) as Category[];
 
-  // 3. FETCH PRODUCTS AT THIS CATEGORY LEVEL (Clean & separate from bundles)
+  // 3. FETCH PRODUCTS AT THIS CATEGORY LEVEL
   let productList: Product[] = [];
 
   const [catRes, subcatRes, junctionRes] = await Promise.all([
@@ -149,7 +151,7 @@ export default async function CategoryPage({ params }: PageProps) {
       className="min-h-screen bg-[#faf9f6] text-[var(--foreground)]"
     >
       {/* HEADER & BREADCRUMBS */}
-     <header className="relative border-b border-[#d4af37]/30 bg-white/90 py-12">
+      <header className="relative border-b border-[#d4af37]/30 bg-white/90 py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-10 space-y-6">
           <div>
             <BackButton label="العودة للخلف" />
@@ -179,16 +181,30 @@ export default async function CategoryPage({ params }: PageProps) {
           </nav>
 
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h1 className="text-4xl font-black tracking-tight text-[#2c220f] sm:text-5xl">
-                {category.name}
-              </h1>
-
-              {category.description && (
-                <p className="mt-3 max-w-2xl text-base font-semibold text-[#6e5422]">
-                  {category.description}
-                </p>
+            <div className="space-y-4">
+              {/* Parent Category Banner / Cover Photo integration if available */}
+              {category.image_url && (
+                <div className="relative h-48 w-full max-w-xl overflow-hidden rounded-3xl border-2 border-[#d4af37]/40 shadow-md">
+                  <Image
+                    src={category.image_url}
+                    alt={category.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
               )}
+
+              <div>
+                <h1 className="text-4xl font-black tracking-tight text-[#2c220f] sm:text-5xl">
+                  {category.name}
+                </h1>
+
+                {category.description && (
+                  <p className="mt-3 max-w-2xl text-base font-semibold text-[#6e5422]">
+                    {category.description}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* CATEGORY BUNDLE PURCHASE CALLOUT */}
@@ -220,11 +236,11 @@ export default async function CategoryPage({ params }: PageProps) {
             )}
           </div>
 
-{!isConsultationsCategory && (
-  <div className="relative max-w-2xl pt-2">
-    <ProductSearch categoryId={category.id} />
-  </div>
-)}
+          {!isConsultationsCategory && (
+            <div className="relative max-w-2xl pt-2">
+              <ProductSearch categoryId={category.id} />
+            </div>
+          )}
         </div>
       </header>
 
@@ -256,32 +272,43 @@ export default async function CategoryPage({ params }: PageProps) {
                     <Link
                       key={sub.id}
                       href={`/categories/${sub.id}`}
-                      className="group relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-[2rem] border border-[#d4af37]/40 bg-gradient-to-br from-[#ffffff] via-[#f7f5ef] to-[#eee8d5] p-8 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-[#d4af37]"
+                      className="group relative flex min-h-[340px] flex-col justify-between overflow-hidden rounded-[2rem] border border-[#d4af37]/40 bg-gradient-to-br from-[#ffffff] via-[#f7f5ef] to-[#eee8d5] p-6 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-[#d4af37]"
                     >
                       <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:16px_16px]" />
-                      <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-[#d4af37]/10 blur-3xl transition-all duration-500 group-hover:bg-[#d4af37]/20" />
 
-                      <div className="relative z-10 flex items-center justify-between">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-xs font-black text-[#8b6508] shadow-sm backdrop-blur-md">
-                          0{idx + 1}
-                        </span>
-                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-base font-bold text-[#8b6508] shadow-sm backdrop-blur-md transition-transform duration-300 group-hover:-translate-x-2">
-                          ←
-                        </span>
-                      </div>
+                      {/* Subcategory Cover Photo thumbnail */}
+                      {sub.image_url ? (
+                        <div className="relative h-36 w-full overflow-hidden rounded-2xl border border-[#d4af37]/30 shadow-inner">
+                          <Image
+                            src={sub.image_url}
+                            alt={sub.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative z-10 flex items-center justify-between">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-xs font-black text-[#8b6508] shadow-sm backdrop-blur-md">
+                            0{idx + 1}
+                          </span>
+                          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d4af37]/40 bg-white/90 text-base font-bold text-[#8b6508] shadow-sm backdrop-blur-md transition-transform duration-300 group-hover:-translate-x-2">
+                            ←
+                          </span>
+                        </div>
+                      )}
 
-                      <div className="relative z-10 my-6">
-                        <h3 className="text-3xl font-black text-[#2c220f] transition-colors duration-300 group-hover:text-[#8b6508]">
+                      <div className="relative z-10 my-4">
+                        <h3 className="text-2xl font-black text-[#2c220f] transition-colors duration-300 group-hover:text-[#8b6508]">
                           {sub.name}
                         </h3>
                         {sub.description && (
-                          <p className="mt-3 line-clamp-3 text-sm font-semibold leading-relaxed text-[#5c4010]">
+                          <p className="mt-2 line-clamp-2 text-xs font-semibold leading-relaxed text-[#5c4010]">
                             {sub.description}
                           </p>
                         )}
                       </div>
 
-                      <div className="relative z-10 flex items-center gap-3">
+                      <div className="relative z-10 flex items-center gap-3 pt-2">
                         <div className="h-1.5 w-12 rounded-full bg-[#d4af37] transition-all duration-500 group-hover:w-full" />
                       </div>
                     </Link>

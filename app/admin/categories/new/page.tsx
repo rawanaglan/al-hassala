@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import BackButton from "@/components/BackButton";
@@ -8,8 +9,8 @@ type Category = {
   name: string;
   description: string | null;
   parent_id: string | null;
-  category_type: string | null;
   bundle_price: number | null;
+  image_url: string | null;
 };
 
 type PageProps = {
@@ -27,7 +28,7 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
   // 1. Fetch all categories for the parent select dropdown
   const { data: catList } = await supabase
     .from("categories")
-    .select("id, name, description, parent_id, category_type, bundle_price")
+    .select("id, name, description, parent_id, bundle_price, image_url")
     .order("name", { ascending: true });
 
   const allCategories = (catList || []) as Category[];
@@ -37,7 +38,7 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
   if (editId) {
     const { data } = await supabase
       .from("categories")
-      .select("id, name, description, parent_id, category_type, bundle_price")
+      .select("id, name, description, parent_id, bundle_price, image_url")
       .eq("id", editId)
       .maybeSingle();
 
@@ -55,12 +56,35 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
     const description = formData.get("description") as string;
     const parentId = formData.get("parent_id") as string;
     const bundlePrice = formData.get("bundle_price") as string;
+    const imageUrlInput = formData.get("image_url") as string;
+    const imageFile = formData.get("image_file") as File | null;
+
+    let finalImageUrl = imageUrlInput?.trim() || existingCat?.image_url || null;
+
+    // Handle file upload if a new cover photo file is provided
+    if (imageFile && imageFile.size > 0) {
+      const fileName = `category-${Date.now()}-${imageFile.name.replace(/\s+/g, "-")}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("products")
+        .upload(fileName, imageFile);
+
+      if (!uploadError && uploadData) {
+        const { data: publicUrlData } = supabase.storage
+          .from("products")
+          .getPublicUrl(uploadData.path);
+        
+        finalImageUrl = publicUrlData.publicUrl;
+      } else if (uploadError) {
+        console.error("Storage upload error:", uploadError.message);
+      }
+    }
 
     const payload = {
       name: name.trim(),
       description: description?.trim() || null,
       parent_id: parentId || null,
       bundle_price: bundlePrice ? parseFloat(bundlePrice) : null,
+      image_url: finalImageUrl,
     };
 
     if (categoryId) {
@@ -81,20 +105,20 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
   }
 
   return (
-    <main dir="rtl" className="min-h-screen text-[var(--foreground)]">
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="mb-8 space-y-4">
+    <main dir="rtl" className="min-h-screen text-[var(--foreground)] bg-[#faf9f6] p-6 lg:p-10 text-[#2c220f]">
+      <div className="mx-auto max-w-3xl space-y-8">
+        <div className="space-y-4">
           <div>
             <BackButton label="العودة للتصنيفات" />
           </div>
           <div>
-            <h1 className="text-gold-gradient mt-2 text-2xl font-bold">
+            <h1 className="text-gold-gradient mt-2 text-3xl font-black">
               {editId ? `تعديل التصنيف: ${existingCat?.name || ""}` : "إضافة تصنيف جديد"}
             </h1>
           </div>
         </div>
 
-        <form action={handleSaveCategory} className="card-ceramic rounded-3xl p-8 space-y-6">
+        <form action={handleSaveCategory} className="card-ceramic rounded-3xl border border-[#d4af37]/30 bg-white p-8 shadow-xl space-y-6">
           <input type="hidden" name="categoryId" value={editId || ""} />
 
           {/* NAME */}
@@ -110,6 +134,67 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
               required
               className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-sm font-medium focus:border-[#8b6508] focus:outline-none"
             />
+          </div>
+
+          {/* PARENT CATEGORY DROPDOWN */}
+          <div>
+            <label className="block mb-2 text-sm font-bold text-[#3a2800]">
+              مكانه في المكتبة (التصنيف الرئيسي)
+            </label>
+            <select
+              name="parent_id"
+              defaultValue={existingCat?.parent_id || defaultParentId || ""}
+              className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-sm font-medium focus:border-[#8b6508] focus:outline-none"
+            >
+              <option value="">تصنيف رئيسي (بدون أب - Parent Category)</option>
+              {allCategories
+                .filter((c) => c.id !== editId)
+                .map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name} (تصنيف فرعي تحت هذا القسم)
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {/* COVER PHOTO */}
+          <div className="space-y-3">
+            <label className="block mb-2 text-sm font-bold text-[#3a2800]">
+              صورة الغلاف (Cover Photo)
+            </label>
+
+            {existingCat?.image_url && (
+              <div className="flex items-center gap-4 p-3 rounded-2xl border border-[#d4af37]/30 bg-[#faf9f6]">
+                <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-[#d4af37]/40 shrink-0">
+                  <Image src={existingCat.image_url} alt="Cover Preview" fill className="object-cover" />
+                </div>
+                <div className="text-xs font-semibold text-[#8c6d31]">
+                  الصورة الحالية مسجلة. يمكنك رفع صورة جديدة أو تعديل الرابط أدناه لاستبدالها.
+                </div>
+              </div>
+            )}
+            
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-[#8c6d31] mb-1">رفع ملف صورة الغلاف</label>
+                <input
+                  type="file"
+                  name="image_file"
+                  accept="image/*"
+                  className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-3 py-2 text-xs font-medium file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#d4af37]/20 file:text-[#5c4010]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#8c6d31] mb-1">أو رابط الصورة مباشرة (URL)</label>
+                <input
+                  type="url"
+                  name="image_url"
+                  defaultValue={existingCat?.image_url || ""}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-2.5 text-sm font-medium focus:border-[#8b6508] focus:outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* BUNDLE PRICE */}
@@ -141,27 +226,6 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
             />
           </div>
 
-          {/* PARENT CATEGORY */}
-          <div>
-            <label className="block mb-2 text-sm font-bold text-[#3a2800]">
-              التصنيف الرئيسي
-            </label>
-            <select
-              name="parent_id"
-              defaultValue={existingCat?.parent_id || defaultParentId || ""}
-              className="w-full rounded-2xl border border-[#d4af37]/30 bg-white px-4 py-3 text-sm font-medium focus:border-[#8b6508] focus:outline-none"
-            >
-              <option value="">تصنيف رئيسي (بدون أب)</option>
-              {allCategories
-                .filter((c) => c.id !== editId)
-                .map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-
           {/* BUTTONS */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border)]">
             <Link
@@ -172,7 +236,7 @@ export default async function CategoryFormPage({ searchParams }: PageProps) {
             </Link>
             <button
               type="submit"
-              className="btn-gold-3d rounded-full px-8 py-2.5 text-xs font-bold"
+              className="rounded-full bg-[#d4af37] px-8 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#b3922b]"
             >
               {editId ? "حفظ التعديلات" : "حفظ التصنيف"}
             </button>
